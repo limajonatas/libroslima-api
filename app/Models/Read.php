@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class Read extends Model
 {
     use HasFactory;
+    protected $table = 'reads';
+    public function book()
+    {
+        return $this->belongsTo(Book::class, 'id_book');
+    }
 
     protected $fillable =[
         'id_book',

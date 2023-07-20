@@ -19,12 +19,14 @@ return new class extends Migration
             $table->string('title');
             $table->string('author');
             $table->integer('pages');
+            $table->integer('how_many_times_read')->default(0);
 
             //opcionais
             $table->integer('publisher_year')->nullable();
+            $table->string('genre')->nullable();
             $table->integer('page_current')->nullable()->default(0);
-            $table->integer('time_read_total')->nullable()->default(0);
-            $table->integer('time_read_per_page')->nullable()->default(0);
+            $table->double('time_read_total')->nullable()->default(0);
+            $table->double('time_read_per_page')->nullable()->default(0);
             $table->text('synopsis')->nullable();
             $table->string('image')->nullable();
 
