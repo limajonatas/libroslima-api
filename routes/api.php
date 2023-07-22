@@ -9,3 +9,4 @@ use App\Http\Controllers\Auth\RegisterController;
 // });
 
 Route::post('register', [RegisterController::class, 'store']);
+Route::post('verify-email', [RegisterController::class, 'verifyEmail']);
