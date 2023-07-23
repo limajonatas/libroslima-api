@@ -46,7 +46,6 @@ class AuthController extends Controller
             'message' => 'Login efetuado com sucesso!',
             'status' => 'success',
             'user' => $user,
-            'remember_me' => $rememberMe,
             'token' => [
                 'token' => $token->plainTextToken,
                 'token_type' => 'Bearer',
