@@ -12,6 +12,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('user', [UserController::class, 'user']);
 
     Route::post('books', [BookController::class, 'store']);
+    Route::get('books', [BookController::class, 'index']);
+    Route::put('books/{id}', [BookController::class, 'update']);
+    Route::delete('books/{id}', [BookController::class, 'destroy']);
+    Route::get('books/{id}', [BookController::class, 'show']);
 });
 
 
