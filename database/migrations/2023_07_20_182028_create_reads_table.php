@@ -22,6 +22,7 @@ return new class extends Migration
             $table->integer('pages_read');
             $table->double('time_read_per_page');
 
+            $table->string('section_where_stopped')->nullable();
             $table->string('comments')->nullable();
 
             $table->timestamps();

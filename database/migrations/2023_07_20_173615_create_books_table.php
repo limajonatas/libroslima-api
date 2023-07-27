@@ -29,6 +29,11 @@ return new class extends Migration
             $table->double('time_read_per_page')->nullable()->default(0);
             $table->text('synopsis')->nullable();
             $table->string('image')->nullable();
+            $table->integer('rating')->nullable();
+            $table->text('opinion')->nullable();
+            $table->timestamp('read_start_date')->nullable();
+            $table->timestamp('read_end_date')->nullable();
+            $table->date('last_read_complete')->nullable();
 
             $table->timestamps();
         });

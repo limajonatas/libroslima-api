@@ -16,13 +16,18 @@ class BookValidateRequest extends FormRequest
         return [
             'title' => 'required|string',
             'author' => 'required|string',
-            'pages' => 'required|integer',
-            'how_many_times_read' => 'required|integer',
+            'pages' => 'required|integer|min:1',
+            'how_many_times_read' => 'required|integer|min:0',
             'publisher_year' => 'integer|between:1900,2023',
             'genre' => 'string',
-            'page_current' => 'integer',
+            'page_current' => 'integer|min:0',
             'synopsis' => 'string',
             'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'rating' => 'integer|min:0|max:5',
+            'opinion' => 'string',
+            'read_start_date' => 'date',
+            'read_end_date' => 'date',
+            'last_read_complete' => 'date',
         ];
     }
 
@@ -45,6 +50,10 @@ class BookValidateRequest extends FormRequest
             'image.image' => 'O campo imagem deve ser uma imagem',
             'image.mimes' => 'O campo imagem deve ser uma imagem do tipo jpeg, png, jpg, gif ou svg',
             'image.max' => 'O campo imagem deve ter no máximo 2048 caracteres',
+            'rating.integer' => 'O campo avaliação deve ser um número inteiro',
+            'rating.min' => 'O campo avaliação deve ser no mínimo 0',
+            'rating.max' => 'O campo avaliação deve ser no máximo 5',
+            'opinion.string' => 'O campo opinião deve ser uma string',
         ];
     }
 }

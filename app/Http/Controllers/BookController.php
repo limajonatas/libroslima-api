@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Requests\BookValidateRequest;
 use App\Models\Book;
+use App\Models\Read;
 
 class BookController extends Controller
 {
@@ -103,10 +104,19 @@ class BookController extends Controller
         try {
             $book = Book::where('id', $id)->where('id_user', auth()->user()->id)->first();
             if ($book) {
+                $history_read = [];
+                try {
+                    $history_read = Read::where('id_book', $id)->orderBy('timestamp', 'desc')->get();
+                } catch (\Exception $e) {
+                    $history_read = [];
+                }
                 return response()->json([
                     'message' => 'Livro encontrado!',
                     'status' => 'success',
-                    'book' => $book
+                    'book' => [
+                        'data' => $book,
+                        'history_read' => $history_read
+                    ],
                 ]);
             } else {
                 return response()->json([

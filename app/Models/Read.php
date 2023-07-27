@@ -22,5 +22,6 @@ class Read extends Model
         'pages_read',
         'time_read_per_page',
         'comments',
+        'section_where_stopped'
     ];
 }
