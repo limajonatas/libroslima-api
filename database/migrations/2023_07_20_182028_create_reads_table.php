@@ -19,8 +19,8 @@ return new class extends Migration
             $table->timestamp('timestamp');
             $table->integer('stopped_page');
             $table->integer('pages_read');
-            $table->double('time_read');
-            $table->double('time_read_per_page');
+            $table->double('time_read', 10, 2)->change();
+            $table->double('time_read_per_page', 10, 2)->change();
 
             $table->string('section_where_stopped')->nullable();
             $table->string('comments')->nullable();

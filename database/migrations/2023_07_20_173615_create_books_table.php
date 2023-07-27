@@ -26,9 +26,9 @@ return new class extends Migration
             $table->string('genre')->nullable();
             $table->integer('page_current')->nullable()->default(0);
             $table->integer('pages_read')->nullable()->default(0);
-            $table->double('accumulated_read_time')->nullable()->default(0);
-            $table->double('time_read_total')->nullable()->default(0);
-            $table->double('time_read_per_page')->nullable()->default(0);
+            $table->double('accumulated_read_time', 10, 2)->nullable()->default(0)->change();
+            $table->double('time_read_total', 10, 2)->nullable()->default(0)->change();
+            $table->double('time_read_per_page', 10, 2)->nullable()->default(0)->change();
             $table->text('synopsis')->nullable();
             $table->string('image')->nullable();
             $table->integer('rating')->nullable();
