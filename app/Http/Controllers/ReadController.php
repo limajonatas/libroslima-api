@@ -29,31 +29,26 @@ class ReadController extends Controller
                     ]);
                 }
 
-                //considerar que se permanence na mesma página, significa que nao leu nenhuma
+                // Calcular o número de páginas lidas na leitura
                 $pages_read = 0;
-                if ($book->page_current != 0) {
+                if ($request->stopped_page > $book->page_current) {
                     $pages_read = $request->stopped_page - $book->page_current;
-                } else {
-                    $pages_read = $request->stopped_page - $book->page_current - 1;
+                    if ($book->page_current == 0) {
+                        $pages_read -= 1;
+                    }
                 }
-                $time_read_per_page = 0;
-                if ($pages_read != 0) {
-                    $time_read_per_page = $request->time_read / $pages_read;
-                }
+
+                // Se a pessoa parou na página 1, definir o tempo por página como 0
+                $time_read_per_page = ($pages_read > 0) ? $request->time_read / $pages_read : 0;
 
                 $read = new Read();
                 $read->id_book = $book_id;
-
                 $readSaved = $this->setRead($read, $request, $book, $pages_read, $time_read_per_page);
+
                 $book->time_read_total += $request->time_read;
                 $book->page_current = $request->stopped_page;
-
-                //TODO: RESOLVER
-                if ($request->stopped_page >= 2) {
-                    $book->time_read_per_page = 0;
-                } else {
-                    $book->time_read_per_page = 0;
-                }
+                $book->pages_read = $book->page_current - 1;
+                $book->time_read_per_page = $book->pages_read >= 1 ? $book->time_read_total / $book->pages_read : 0;
                 $book->save();
 
                 return response()->json([
@@ -76,14 +71,15 @@ class ReadController extends Controller
         }
     }
 
+
     public function updateLastRead(ReadValidadeRequest $request, $book_id)
     {
         try {
             $book = Book::where('id', $book_id)->where('id_user', auth()->user()->id)->first();
             if ($book) {
-                $read = Read::where('id_book', $book_id)->orderBy('timestamp', 'desc')->first();
+                $readCurrent = Read::where('id_book', $book_id)->orderBy('timestamp', 'desc')->first();
 
-                if ($read) {
+                if ($readCurrent) {
                     $read_previous = Read::where('id_book', $book_id)->orderBy('timestamp', 'desc')->skip(1)->first();
 
                     try {
@@ -101,32 +97,32 @@ class ReadController extends Controller
 
                     $pages_read = 0;
                     if ($read_previous) { //siginifica que nao é a primeira leitura
-                        if ($request->stopped_page == $read_previous->stopped_page) {
-                            $pages_read = 1;
-                        } else {
+                        if ($request->stopped_page > $read_previous->stopped_page) {
                             $pages_read = $request->stopped_page - $read_previous->stopped_page;
                         }
                     } else {
-                        $pages_read = $request->stopped_page;
+                        if ($request->stopped_page > $book->page_current) {
+                            $pages_read = $request->stopped_page - $book->page_current;
+                            if ($book->page_current == 0) {
+                                $pages_read -= 1;
+                            }
+                        }
                     }
 
-                    $time_read_per_page = $request->time_read / $pages_read;
+                    $time_read_per_page = ($pages_read > 0) ? $request->time_read / $pages_read : 0;
 
-                    $book->time_read_total += $request->time_read - $read->time_read;
+                    $book->time_read_total -= $readCurrent->time_read;
+                    $readSaved = $this->setRead($readCurrent, $request, $book, $pages_read, $time_read_per_page);
+                    $book->time_read_total += $request->time_read;
                     $book->page_current = $request->stopped_page;
-
-                    //TODO: RESOLVER
-                    if ($book->page_current >= 2) {
-                        $book->time_read_per_page = $book->time_read_total / $book->page_current - 1;
-                    } else {
-                        $book->time_read_per_page = 0;
-                    }
+                    $book->pages_read = $book->page_current - 1;
+                    $book->time_read_per_page = $book->pages_read >= 1 ? $book->time_read_total / $book->pages_read : 0;
                     $book->save();
-                    $this->setRead($read, $request, $book, $pages_read, $time_read_per_page);
 
                     return response()->json([
                         'message' => 'Leitura atualizada com sucesso!',
                         'status' => 'success',
+                        'read' => $readSaved
                     ]);
                 } else {
                     return response()->json([
@@ -228,6 +224,8 @@ class ReadController extends Controller
                     ], 404);
                 }
                 $book->page_current = 0;
+                $book->accumulated_read_time += $book->time_read_total;
+                $book->pages_read = 0;
                 $book->time_read_total = 0;
                 $book->time_read_per_page = 0;
                 $book->read_end_date = null;

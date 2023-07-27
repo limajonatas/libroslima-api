@@ -25,6 +25,8 @@ return new class extends Migration
             $table->integer('publisher_year')->nullable();
             $table->string('genre')->nullable();
             $table->integer('page_current')->nullable()->default(0);
+            $table->integer('pages_read')->nullable()->default(0);
+            $table->integer('accumulated_read_time')->nullable()->default(0);
             $table->double('time_read_total')->nullable()->default(0);
             $table->double('time_read_per_page')->nullable()->default(0);
             $table->text('synopsis')->nullable();
