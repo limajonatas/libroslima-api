@@ -16,10 +16,19 @@ class Book extends Model
     {
         return $this->belongsTo(User::class, 'id_user');
     }
+
+    public function reads()
+    {
+        return $this->hasMany(Read::class, 'id_book')->orderBy('timestamp', 'desc');
+    }
+
+    public function authors(){
+        return $this->belongsToMany(Author::class, 'author_book', 'id_book', 'id_author');
+    }
+
     protected $fillable = [
         'id_user',
         'title',
-        'author',
         'pages',
         'publisher_year',
         'page_current',

@@ -15,7 +15,7 @@ class BookValidateRequest extends FormRequest
     {
         return [
             'title' => 'required|string',
-            'author' => 'required|string',
+            'authors' => 'required|array|min:1',
             'pages' => 'required|integer|min:1',
             'how_many_times_read' => 'required|integer|min:0',
             'publisher_year' => 'integer|between:1900,2023',
@@ -36,8 +36,9 @@ class BookValidateRequest extends FormRequest
         return [
             'title.required' => 'O campo título é obrigatório',
             'title.string' => 'O campo título deve ser uma string',
-            'author.required' => 'O campo autor é obrigatório',
-            'author.string' => 'O campo autor deve ser uma string',
+            'authors.required' => 'O campo autor(es) é obrigatório',
+            'authors.array' => 'O campo autor(es) deve ser um array',
+            'authors.min' => 'Deve haver pelo menos um autor',
             'pages.required' => 'O campo páginas é obrigatório',
             'pages.integer' => 'O campo páginas deve ser um número inteiro',
             'how_many_times_read.required' => 'O campo quantas vezes lido é obrigatório',

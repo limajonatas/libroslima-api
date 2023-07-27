@@ -9,6 +9,7 @@ class Read extends Model
 {
     use HasFactory;
     protected $table = 'reads';
+    
     public function book()
     {
         return $this->belongsTo(Book::class, 'id_book');
