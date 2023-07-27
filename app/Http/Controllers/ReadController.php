@@ -18,9 +18,10 @@ class ReadController extends Controller
                 $read_previous = Read::where('id_book', $book_id)->orderBy('timestamp', 'desc')->first();
                 try {
                     if ($read_previous) {
+                        // verify if the timestamp is greater than the last read
                         $this->verifyPreviousRead($read_previous, $request);
                     } else {
-                        $book->read_start_date = $request->timestamp;
+                        $book->read_start_date = $request->timestamp; //date initial of reading
                     }
                 } catch (\Exception $e) {
                     return response()->json([
@@ -29,7 +30,7 @@ class ReadController extends Controller
                     ]);
                 }
 
-                // Calcular o número de páginas lidas na leitura
+                // calculate the pages read
                 $pages_read = 0;
                 if ($request->stopped_page > $book->page_current) {
                     $pages_read = $request->stopped_page - $book->page_current;
@@ -38,13 +39,14 @@ class ReadController extends Controller
                     }
                 }
 
-                // Se a pessoa parou na página 1, definir o tempo por página como 0
                 $time_read_per_page = ($pages_read > 0) ? $request->time_read / $pages_read : 0;
 
                 $read = new Read();
                 $read->id_book = $book_id;
+                //create a new read
                 $readSaved = $this->setRead($read, $request, $book, $pages_read, $time_read_per_page);
 
+                //update the book
                 $book->time_read_total += $request->time_read;
                 $book->page_current = $request->stopped_page;
                 $book->pages_read = $book->page_current - 1;
@@ -96,7 +98,8 @@ class ReadController extends Controller
                     }
 
                     $pages_read = 0;
-                    if ($read_previous) { //siginifica que nao é a primeira leitura
+                    if ($read_previous) {
+                        //calculate the pages read in relation to the previous read
                         if ($request->stopped_page > $read_previous->stopped_page) {
                             $pages_read = $request->stopped_page - $read_previous->stopped_page;
                         }
@@ -112,6 +115,7 @@ class ReadController extends Controller
                     $time_read_per_page = ($pages_read > 0) ? $request->time_read / $pages_read : 0;
 
                     $book->time_read_total -= $readCurrent->time_read;
+                    //update the read and book
                     $readSaved = $this->setRead($readCurrent, $request, $book, $pages_read, $time_read_per_page);
                     $book->time_read_total += $request->time_read;
                     $book->page_current = $request->stopped_page;
@@ -150,39 +154,24 @@ class ReadController extends Controller
         try {
             $book = Book::where('id', $book_id)->where('id_user', auth()->user()->id)->first();
             if ($book) {
-                $read = Read::where('id_book', $book_id)->orderBy('timestamp', 'desc')->first();
+                $readLast = Read::where('id_book', $book_id)->orderBy('timestamp', 'desc')->first();
 
-                if ($read) {
-                    // Verifica se é a primeira leitura
+                if ($readLast) {
                     $is_first_read = Read::where('id_book', $book_id)->count() === 1;
 
-                    // Resto do código existente...
-
-                    // Delete a última leitura
-                    $read->delete();
-
                     if ($is_first_read) {
-                        // Ajuste para a primeira leitura (divisão por zero)
                         $book->page_current = 0;
                         $book->time_read_total = 0;
                         $book->time_read_per_page = 0;
                         $book->read_start_date = null;
                     } else {
-                        // Cálculo normal do tempo médio por página após a exclusão da última leitura
-                        $page_current = $book->page_current;
-                        $book->page_current = $page_current - $read->pages_read;
-                        $page_current -= $read->pages_read;
-                        $book->time_read_total -= $read->time_read;
-
-                        //TODO: RESOLVER
-                        if ($page_current >= 2) {
-                            $book->time_read_per_page = $book->time_read_total / $page_current - 1;
-                        } else {
-                            $book->time_read_per_page = $book->time_read_total;
-                        }
+                        $book->page_current = $book->page_current - $readLast->pages_read;
+                        $book->time_read_total -= $readLast->time_read;
+                        $book->pages_read = $book->page_current - 1;
+                        $book->time_read_per_page = $book->pages_read >= 1 ? $book->time_read_total / $book->pages_read : 0;
                     }
 
-                    // Salva o registro do livro atualizado
+                    $readLast->delete();
                     $book->save();
 
                     return response()->json([

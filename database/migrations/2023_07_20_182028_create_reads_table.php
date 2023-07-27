@@ -17,9 +17,9 @@ return new class extends Migration
             $table->foreign('id_book')->references('id')->on('books')->onUpdate('cascade')->onDelete('cascade');
 
             $table->timestamp('timestamp');
-            $table->double('time_read');
             $table->integer('stopped_page');
             $table->integer('pages_read');
+            $table->double('time_read');
             $table->double('time_read_per_page');
 
             $table->string('section_where_stopped')->nullable();
