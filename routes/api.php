@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\ReadController;
 use App\Http\Controllers\UserController;
@@ -22,6 +23,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('books/{book_id}/read', [ReadController::class, 'updateLastRead']);
     Route::delete('books/{book_id}/read', [ReadController::class, 'destroyLastRead']);
     Route::post('books/{book_id}/read/finish', [ReadController::class, 'finishRead']);
+
+    Route::get('authors', [AuthorController::class, 'index']);
 });
 
 

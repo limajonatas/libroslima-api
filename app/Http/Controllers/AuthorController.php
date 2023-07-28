@@ -9,7 +9,21 @@ class AuthorController extends Controller
 {
     public function index()
     {
-        //
+        try{
+            //retornar todos os autores do usuário logado
+            $authors = auth()->user()->books->load('authors:name,last_name')->pluck('authors')->flatten()->values();
+
+            return response()->json([
+                'status' => 'success',
+                'authors' => $authors
+            ]);
+        }catch(\Exception $e){
+            return response()->json([
+                'message' => 'Erro ao buscar autores!',
+                'status' => 'error',
+                'error' => $e->getMessage()
+            ], 404);
+        }
     }
 
 
