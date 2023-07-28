@@ -17,7 +17,6 @@ return new class extends Migration
             $table->foreign('id_user')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
 
             $table->string('title');
-            $table->string('author');
             $table->integer('pages');
             $table->integer('how_many_times_read')->default(0);
 

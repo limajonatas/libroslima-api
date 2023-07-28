@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\BookValidateRequest;
+use App\Models\Author;
 use App\Models\Book;
 use App\Models\Read;
 
@@ -12,7 +13,8 @@ class BookController extends Controller
     public function index()
     {
         try {
-            $books = Book::where('id_user', auth()->user()->id)->get();
+            $books = auth()->user()->books;
+            $books->load('authors:name,last_name');
             return response()->json([
                 'status' => 'success',
                 'books' => $books
@@ -29,9 +31,26 @@ class BookController extends Controller
     public function store(BookValidateRequest $request)
     {
         try {
-            $book = Book::where('title', $request->title)->where('author', $request->author)->first();
+            $authorsIds = [];
+            foreach ($request->authors as $authorFullName) {
+                $authorData = explode(' ', $authorFullName, 2);
+                $name = $authorData[0];
+                $lastName = isset($authorData[1]) ? $authorData[1] : null;
 
-            if ($book) {
+                $author = Author::firstOrCreate([
+                    'name' => $name,
+                    'last_name' => $lastName
+                ]);
+
+                $authorsIds[] = $author->id;
+            }
+
+            $existingBook = Book::where('title', $request->title)
+                ->where('id_user', auth()->user()->id)->whereHas('authors', function ($query) use ($authorsIds) {
+                    $query->whereIn('authors.id', $authorsIds);
+                })->first();
+
+            if ($existingBook) {
                 return response()->json([
                     'message' => 'Livro já cadastrado!',
                     'status' => 'error'
@@ -40,7 +59,6 @@ class BookController extends Controller
                 $book = new Book();
                 $book->id_user = auth()->user()->id;
                 $book->title = $request->title;
-                $book->author = $request->author;
                 $book->pages = $request->pages;
                 $book->how_many_times_read = $request->how_many_times_read;
                 $book->publisher_year = $request->publisher_year;
@@ -48,7 +66,11 @@ class BookController extends Controller
                 $book->page_current = $request->page_current;
                 $book->synopsis = $request->synopsis;
                 $book->image = $request->image;
+
                 $book->save();
+
+                $book->authors()->attach($authorsIds);
+                $book->load('authors');
                 return response()->json([
                     'message' => 'Livro cadastrado com sucesso!',
                     'status' => 'success',
@@ -69,8 +91,51 @@ class BookController extends Controller
         try {
             $book = Book::where('id', $request->id)->where('id_user', auth()->user()->id)->first();
             if ($book) {
+                // Verifica os autores atuais do livro
+                $currentAuthors = $book->authors;
+
+                // Cria um array para armazenar os IDs dos autores enviados na solicitação
+                $requestedAuthorIds = [];
+
+                foreach ($request->authors as $author) {
+                    $authorData = explode(' ', $author, 2);
+                    $name = $authorData[0];
+                    $lastName = isset($authorData[1]) ? $authorData[1] : null;
+
+                    // Verifica se o autor já existe no banco de dados
+                    $existingAuthor = Author::where('name', $name)->where('last_name', $lastName)->first();
+
+                    if ($existingAuthor) {
+                        // Se o autor já existe, adiciona o ID à lista de IDs dos autores enviados na solicitação
+                        $requestedAuthorIds[] = $existingAuthor->id;
+                    } else {
+                        // Se o autor não existe, cria um novo autor e adiciona o ID à lista de IDs dos autores enviados na solicitação
+                        $newAuthor = Author::create([
+                            'name' => $name,
+                            'last_name' => $lastName
+                        ]);
+
+                        $requestedAuthorIds[] = $newAuthor->id;
+                    }
+                }
+
+                // Remove os autores que não estão mais associados ao livro
+                $currentAuthorIds = $currentAuthors->pluck('id')->toArray();
+                $authorsToRemove = array_diff($currentAuthorIds, $requestedAuthorIds);
+                foreach ($authorsToRemove as $authorId) {
+                    // Verifica se o autor atual do livro foi removido ou alterado
+                    $existingAuthor = Author::find($authorId);
+                    if ($existingAuthor) {
+                        // Se o autor atual do livro não está presente nos autores enviados na solicitação, verifique se ele não está associado a nenhum outro livro
+                        if ($existingAuthor->books->count() == 1) {
+                            // Se o autor não estiver associado a nenhum outro livro, exclua-o
+                            $existingAuthor->delete();
+                        }
+                    }
+                }
+
+                // Atualize os dados do livro, exceto os autores
                 $book->title = $request->title;
-                $book->author = $request->author;
                 $book->pages = $request->pages;
                 $book->how_many_times_read = $request->how_many_times_read;
                 $book->publisher_year = $request->publisher_year;
@@ -79,6 +144,10 @@ class BookController extends Controller
                 $book->synopsis = $request->synopsis;
                 $book->image = $request->image;
                 $book->save();
+
+                // Sincronize os novos autores com o livro (atualizando a tabela pivot)
+                $book->authors()->sync($requestedAuthorIds);
+                $book->load('authors');
                 return response()->json([
                     'message' => 'Livro atualizado com sucesso!',
                     'status' => 'success',
@@ -99,24 +168,19 @@ class BookController extends Controller
         }
     }
 
+
+
     public function show(string $id)
     {
         try {
-            $book = Book::where('id', $id)->where('id_user', auth()->user()->id)->first();
+            $book = Book::find($id);
             if ($book) {
-                $history_read = [];
-                try {
-                    $history_read = Read::where('id_book', $id)->orderBy('timestamp', 'desc')->get();
-                } catch (\Exception $e) {
-                    $history_read = [];
-                }
+                $book->reads;
+                $book->authors;
                 return response()->json([
                     'message' => 'Livro encontrado!',
                     'status' => 'success',
-                    'book' => [
-                        'data' => $book,
-                        'history_read' => $history_read
-                    ],
+                    'book' => $book
                 ]);
             } else {
                 return response()->json([
@@ -138,6 +202,14 @@ class BookController extends Controller
         try {
             $book = Book::where('id', $id)->where('id_user', auth()->user()->id)->first();
             if ($book) {
+                $authors = $book->authors;
+
+                //verify if author is not associated with another book
+                foreach ($authors as $author) {
+                    if ($author->books->count() == 1) {
+                        $author->delete();
+                    }
+                }
                 $book->delete();
                 return response()->json([
                     'message' => 'Livro excluído com sucesso!',
