@@ -15,7 +15,7 @@ class AuthController extends Controller
         $userField = $request->input('user');
         $password = $request->input('password');
 
-        // Verifica se o usuário existe por email ou nickname
+        // Verify if user exists by email or nickname
         $user = User::where('email', $userField)->orWhere('nickname', $userField)->first();
 
         if (!$user) {
@@ -25,7 +25,6 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Verifica se a senha está correta
         if (!Auth::attempt(['email' => $user->email, 'password' => $password])) {
             return response()->json([
                 'error' => 'Senha inválida!',
@@ -33,13 +32,10 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Verifica se o usuário escolheu "lembrar-me"
         $rememberMe = $request->input('remember_me');
 
-        // Define o prazo de validade com base na escolha do usuário
+        // set token and expiration time
         $expiration = $rememberMe ? now()->addDays(30) : null;
-
-        // Gera o token de acesso
         $token = $user->createToken('token-name', ['server:update'], $expiration);
 
         return response()->json([
@@ -53,10 +49,10 @@ class AuthController extends Controller
             ],
         ]);
     }
+
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
-
         return response()->json(['message' => 'Logout efetuado com sucesso.']);
     }
 }

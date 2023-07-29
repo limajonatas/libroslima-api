@@ -91,10 +91,8 @@ class BookController extends Controller
         try {
             $book = Book::where('id', $request->id)->where('id_user', auth()->user()->id)->first();
             if ($book) {
-                // Verifica os autores atuais do livro
                 $currentAuthors = $book->authors;
 
-                // Cria um array para armazenar os IDs dos autores enviados na solicitação
                 $requestedAuthorIds = [];
 
                 foreach ($request->authors as $author) {
@@ -102,14 +100,12 @@ class BookController extends Controller
                     $name = $authorData[0];
                     $lastName = isset($authorData[1]) ? $authorData[1] : null;
 
-                    // Verifica se o autor já existe no banco de dados
                     $existingAuthor = Author::where('name', $name)->where('last_name', $lastName)->first();
 
+                    //add authors that already exists and new authors
                     if ($existingAuthor) {
-                        // Se o autor já existe, adiciona o ID à lista de IDs dos autores enviados na solicitação
                         $requestedAuthorIds[] = $existingAuthor->id;
                     } else {
-                        // Se o autor não existe, cria um novo autor e adiciona o ID à lista de IDs dos autores enviados na solicitação
                         $newAuthor = Author::create([
                             'name' => $name,
                             'last_name' => $lastName
@@ -119,22 +115,18 @@ class BookController extends Controller
                     }
                 }
 
-                // Remove os autores que não estão mais associados ao livro
+                //compare currents authors with the new authors and delete the that don't have books associate
                 $currentAuthorIds = $currentAuthors->pluck('id')->toArray();
                 $authorsToRemove = array_diff($currentAuthorIds, $requestedAuthorIds);
                 foreach ($authorsToRemove as $authorId) {
-                    // Verifica se o autor atual do livro foi removido ou alterado
                     $existingAuthor = Author::find($authorId);
                     if ($existingAuthor) {
-                        // Se o autor atual do livro não está presente nos autores enviados na solicitação, verifique se ele não está associado a nenhum outro livro
                         if ($existingAuthor->books->count() == 1) {
-                            // Se o autor não estiver associado a nenhum outro livro, exclua-o
                             $existingAuthor->delete();
                         }
                     }
                 }
 
-                // Atualize os dados do livro, exceto os autores
                 $book->title = $request->title;
                 $book->pages = $request->pages;
                 $book->how_many_times_read = $request->how_many_times_read;
@@ -145,7 +137,6 @@ class BookController extends Controller
                 $book->image = $request->image;
                 $book->save();
 
-                // Sincronize os novos autores com o livro (atualizando a tabela pivot)
                 $book->authors()->sync($requestedAuthorIds);
                 $book->load('authors');
                 return response()->json([

@@ -24,8 +24,6 @@ class RegisterController extends Controller
             ], 400);
         }
 
-
-        // Gerar um token aleatório para o e-mail de verificação até que seja único
         $verificationCode = null;
         do {
             $verificationCode = rand(100000, 999999);
@@ -33,7 +31,6 @@ class RegisterController extends Controller
 
 
         try {
-            // Procurar por um registro com o e-mail fornecido
             $emailVerification = EmailVerification::updateOrCreate(
                 ['email_user' => $request->input('email')],
                 [
@@ -44,6 +41,7 @@ class RegisterController extends Controller
                 ]
             );
         } catch (ModelNotFoundException $e) {
+            //there was a problem for sending the email
             EmailVerification::where('email_user', $request->input('email'))->delete();
 
             return response()->json([
@@ -54,15 +52,11 @@ class RegisterController extends Controller
 
         if ($emailVerification->wasRecentlyCreated) {
             try {
-                // Enviar o email
-                Mail::to($request->input('email'))
-                    ->send(new VerificationCodeEmail($verificationCode));
+                Mail::to($request->input('email'))->send(new VerificationCodeEmail($verificationCode));
             } catch (TransportException $e) {
-                // Capturar a exceção de envio de e-mail
                 $code = $e->getCode();
                 $message = $e->getMessage();
 
-                // Excluir o registro da tabela de e-mails a serem verificados
                 EmailVerification::where('email_user', $request->input('email'))->delete();
                 return response()->json([
                     'message' => 'Erro ao enviar o e-mail de verificação.',
@@ -73,13 +67,13 @@ class RegisterController extends Controller
                     ]
                 ], 500);
             }
-
+            //Email sent successfully
             return response()->json([
                 'message' => 'Verifique seu e-mail para concluir o cadastro.',
                 'status' => 'success'
             ]);
         } else {
-            // Se o registro não foi criado recentemente, significa que o e-mail já existe
+            //Email already sent recently
             return response()->json([
                 'error' => 'Um e-mail de verificação já foi enviado para este endereço de e-mail.',
                 'status' => 'success'
@@ -90,7 +84,6 @@ class RegisterController extends Controller
     public function verifyEmail(CheckCodeEmailRequest $request)
     {
         try {
-
             if (User::where('email', $request->input('email'))->exists()) {
                 return response()->json([
                     'message' => 'Usuário já cadastrado',
@@ -98,14 +91,11 @@ class RegisterController extends Controller
                 ], 400);
             }
 
-            //verifica se o email está no banco
             if (EmailVerification::where('email_user', $request->input('email'))->exists()) {
-                //verifica se o código está correto
                 try {
                     if (EmailVerification::where('email_user', $request->input('email'))
                         ->where('code_verification', $request->input('code'))->exists()
                     ) {
-                        //se estiver, cria o usuário
                         $emailVerification = EmailVerification::where('email_user', $request->input('email'))
                             ->where('code_verification', $request->input('code'))->first();
 
@@ -117,7 +107,6 @@ class RegisterController extends Controller
                             'email_verified_at' => now(),
                         ]);
 
-                        //deleta o registro de verificação de email
                         EmailVerification::where('email_user', $request->input('email'))->delete();
 
                         $token = $user->createToken('api-token')->plainTextToken;
@@ -160,7 +149,6 @@ class RegisterController extends Controller
             $verification = EmailVerification::where('email_user', $request->email)->first();
 
             if ($verification) {
-                // Gerar um token aleatório para o e-mail de verificação até que seja único
                 $verificationCode = null;
                 do {
                     $verificationCode = rand(100000, 999999);
@@ -170,15 +158,12 @@ class RegisterController extends Controller
                 $verification->save();
 
                 try {
-                    // Enviar o email
                     Mail::to($request->email)
                         ->send(new VerificationCodeEmail($verificationCode));
                 } catch (TransportException $e) {
-                    // Capturar a exceção de envio de e-mail
                     $code = $e->getCode();
                     $message = $e->getMessage();
 
-                    // Excluir o registro da tabela de e-mails a serem verificados
                     EmailVerification::where('email_user', $request->email)->delete();
                     return response()->json([
                         'message' => 'Erro ao enviar o e-mail de verificação.',
@@ -194,7 +179,7 @@ class RegisterController extends Controller
                     'message' => 'Verifique seu e-mail para concluir o cadastro.',
                     'status' => 'success'
                 ]);
-            }else{
+            } else {
                 return response()->json([
                     'message' => 'E-mail não encontrado.',
                     'status' => 'error'
