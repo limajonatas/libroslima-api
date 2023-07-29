@@ -1,20 +1,18 @@
-FROM richarvey/nginx-php-fpm:1.7.2
+FROM php:8.0-fpm
 
+# Update PHP to 8.0
+RUN apt-get update && apt-get install -y php8.0-fpm php8.0-cli php8.0-mysql
+
+# Copy project files
 COPY . .
 
-# Image config
-ENV SKIP_COMPOSER 1
-ENV WEBROOT /var/www/html/public
-ENV PHP_ERRORS_STDERR 1
-ENV RUN_SCRIPTS 1
-ENV REAL_IP_HEADER 1
-
-# Laravel config
+# Update Laravel config
 ENV APP_ENV production
 ENV APP_DEBUG false
 ENV LOG_CHANNEL stderr
 
-# Allow composer to run as root
-ENV COMPOSER_ALLOW_SUPERUSER 1
+# Install Laravel dependencies
+RUN composer install
 
-CMD ["/start.sh"]
+# Start Laravel server
+CMD ["php artisan serve"]
