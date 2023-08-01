@@ -1,18 +1,24 @@
-FROM php:8.0-fpm
+FROM php:8.1-fpm-alpine
 
-# Update PHP to 8.0
-RUN sudo apt-get update && sudo apt-get install -y php8.0-fpm php8.0-cli php8.0-mysql
+RUN apk add --no-cache bash
 
-# Copy project files
+RUN docker-php-ext-install pdo pdo_mysql sockets
+RUN curl -sS https://getcomposer.org/installer | php -- \
+     --install-dir=/usr/local/bin --filename=composer
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /app
 COPY . .
-
-# Update Laravel config
-ENV APP_ENV local
-ENV APP_DEBUG false
-ENV LOG_CHANNEL stderr
-
-# Install Laravel dependencies
 RUN composer install
 
-# Start Laravel server
-CMD ["php artisan serve"]
+# Limpar e gerar o cache das configurações e rotas do Laravel
+RUN php artisan config:cache && php artisan route:cache
+
+# Executar o migrate para aplicar as migrações no banco de dados
+# RUN php artisan migrate --force
+
+# Iniciar o servidor PHP-FPM
+CMD ["php-fpm"]
+# CMD ["/scripts/deploy.sh"]
+
