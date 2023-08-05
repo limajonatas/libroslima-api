@@ -25,7 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-Route::post('register', [RegisterController::class, 'store']);
-Route::post('resend-email', [RegisterController::class, 'resendEmail']);
-Route::post('verify-email', [RegisterController::class, 'verifyEmail']);
-Route::post('login', [AuthController::class, 'login']);
+Route::post('register', [RegisterController::class, 'store'], ['middleware' => 'auth:guest']);
+Route::post('resend-email', [RegisterController::class, 'resendEmail'], ['middleware' => 'auth:guest']);
+Route::post('verify-email', [RegisterController::class, 'verifyEmail'], ['middleware' => 'auth:guest']);
+Route::post('login', [AuthController::class, 'login'], ['middleware' => 'auth:guest']);
